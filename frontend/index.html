@@ -9,6 +9,7 @@
     <h1>Novo Cliente</h1>
 
     <form id="form-cliente">
+        <input type="hidden" id="cliente-id">
         <p>
             <label for="nome">Nome Completo:</label><br>
             <input type="text" id="nome" name="nome" required>
@@ -44,11 +45,13 @@
                 <th>Login PPPoE</th>
                 <th>Plano</th>
                 <th>Status</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody id="tabela-clientes-corpo">
             </tbody>
     </table>
+
     <div id="mensagem-resposta"></div>
 
     <script src="app.js"></script>
