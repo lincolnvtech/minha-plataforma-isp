@@ -3,56 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de Cliente</title>
+    <title>Painel de Gestão ISP</title>
 </head>
 <body>
     <h1>Novo Cliente</h1>
-
     <form id="form-cliente">
         <input type="hidden" id="cliente-id">
-        <p>
-            <label for="nome">Nome Completo:</label><br>
-            <input type="text" id="nome" name="nome" required>
-        </p>
-        <p>
-            <label for="cpf">CPF:</label><br>
-            <input type="text" id="cpf" name="cpf" required>
-        </p>
-        <p>
-            <label for="endereco">Endereço:</label><br>
-            <input type="text" id="endereco" name="endereco">
-        </p>
-        <p>
-            <label for="login">Login PPPoE:</label><br>
-            <input type="text" id="login" name="login" required>
-        </p>
-        <p>
-            <label for="senha">Senha PPPoE:</label><br>
-            <input type="password" id="senha" name="senha" required>
-        </p>
+        <p><label for="nome">Nome Completo:</label><br><input type="text" id="nome" name="nome" required></p>
+        <p><label for="cpf">CPF:</label><br><input type="text" id="cpf" name="cpf" required></p>
+        <p><label for="endereco">Endereço:</label><br><input type="text" id="endereco" name="endereco"></p>
+        <p><label for="login">Login PPPoE:</label><br><input type="text" id="login" name="login" required></p>
+        <p><label for="senha">Senha PPPoE:</label><br><input type="password" id="senha" name="senha" required></p>
         <button type="submit">Cadastrar Cliente</button>
     </form>
-
+    <div id="mensagem-resposta-cliente"></div>
     <hr>
     <h2>Clientes Cadastrados</h2>
-    <button id="btn-atualizar">Atualizar Lista</button>
+    <button id="btn-atualizar-clientes">Atualizar Lista</button>
     <table border="1" width="100%">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nome Completo</th>
-                <th>CPF</th>
-                <th>Login PPPoE</th>
-                <th>Plano</th>
-                <th>Status</th>
-                <th>Ações</th>
+                <th>ID</th><th>Nome Completo</th><th>CPF</th><th>Login PPPoE</th><th>Plano</th><th>Status</th><th>Ações</th>
             </tr>
         </thead>
-        <tbody id="tabela-clientes-corpo">
-            </tbody>
+        <tbody id="tabela-clientes-corpo"></tbody>
     </table>
 
-    <div id="mensagem-resposta"></div>
+    <hr>
+    <h1>Sistema de Tickets</h1>
+    <h2>Abrir Novo Ticket</h2>
+    <form id="form-ticket">
+        <p>
+            <label for="ticket-cliente-id">Cliente:</label><br>
+            <select id="ticket-cliente-id" required>
+                <option value="">Selecione um cliente...</option>
+            </select>
+        </p>
+        <p>
+            <label for="ticket-assunto">Assunto:</label><br>
+            <input type="text" id="ticket-assunto" required>
+        </p>
+        <p>
+            <label for="ticket-mensagem">Mensagem:</label><br>
+            <textarea id="ticket-mensagem" rows="4" style="width: 100%;"></textarea>
+        </p>
+        <button type="submit">Abrir Ticket</button>
+    </form>
+    <div id="mensagem-resposta-ticket"></div>
+    <hr>
+    <h2>Tickets Abertos</h2>
+    <button id="btn-atualizar-tickets">Atualizar Tickets</button>
+    <table border="1" width="100%">
+        <thead>
+            <tr>
+                <th>ID</th><th>Cliente</th><th>Assunto</th><th>Data Abertura</th><th>Status</th><th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-tickets-corpo"></tbody>
+    </table>
 
     <script src="app.js"></script>
 </body>
