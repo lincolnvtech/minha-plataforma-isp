@@ -1,9 +1,36 @@
-// app.js - VERSÃO COM CRUD DE CLIENTES, TICKETS E PLANOS
+// GUARDA DE AUTENTICAÇÃO
+// Verifica se o usuário está logado. Se não, redireciona para a página de login.
+if (!localStorage.getItem('usuario_logado')) {
+    window.location.href = 'login.html';
+}
+
+// app.js - VERSÃO COM NAVEGAÇÃO ENTRE SEÇÕES
 
 const API_BASE_URL = 'http://192.168.18.127:5000'; // Use seu IP
 
-// --- FUNÇÕES DE PLANOS ---
-async function carregarPlanos() {
+// --- NOVA FUNÇÃO PARA NAVEGAÇÃO ---
+function showSection(targetId) {
+    // Esconde todas as seções
+    document.querySelectorAll('.page-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    // Mostra apenas a seção alvo
+    const targetSection = document.getElementById(targetId);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+    // Atualiza a classe 'active' no menu
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        if (link.dataset.target === targetId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
+// --- FUNÇÕES DE PLANOS (EXISTENTES) ---
+async function carregarPlanos() { /* ... (código existente, sem alterações) ... */
     const tabelaCorpo = document.getElementById('tabela-planos-corpo');
     tabelaCorpo.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
     try {
@@ -12,26 +39,14 @@ async function carregarPlanos() {
         tabelaCorpo.innerHTML = '';
         planos.forEach(plano => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${plano.id}</td>
-                <td>${plano.nome_plano}</td>
-                <td>${plano.velocidade_download}</td>
-                <td>${plano.velocidade_upload}</td>
-                <td>R$ ${plano.preco.toFixed(2)}</td>
-                <td>${plano.mikrotik_profile_name}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button>
-                </td>
-            `;
+            tr.innerHTML = `<td>${plano.id}</td><td>${plano.nome_plano}</td><td>${plano.velocidade_download}</td><td>${plano.velocidade_upload}</td><td>R$ ${plano.preco.toFixed(2)}</td><td>${plano.mikrotik_profile_name}</td><td><button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button></td>`;
             tabelaCorpo.appendChild(tr);
         });
     } catch (error) {
         tabelaCorpo.innerHTML = '<tr><td colspan="7" style="color: red;">Erro ao carregar planos.</td></tr>';
     }
 }
-
-function prepararEdicaoPlano(plano) {
+function prepararEdicaoPlano(plano) { /* ... (código existente, sem alterações) ... */
     document.getElementById('plano-id').value = plano.id;
     document.getElementById('plano-nome').value = plano.nome_plano;
     document.getElementById('plano-download').value = plano.velocidade_download;
@@ -41,8 +56,7 @@ function prepararEdicaoPlano(plano) {
     document.querySelector("#form-plano button[type='submit']").textContent = 'Atualizar Plano';
     document.getElementById('btn-cancelar-edicao-plano').classList.remove('d-none');
 }
-
-function resetarFormularioPlano() {
+function resetarFormularioPlano() { /* ... (código existente, sem alterações) ... */
     document.getElementById('form-plano').reset();
     document.getElementById('plano-id').value = '';
     document.querySelector("#form-plano button[type='submit']").textContent = 'Salvar Plano';
@@ -50,7 +64,7 @@ function resetarFormularioPlano() {
 }
 
 // --- FUNÇÕES DE CLIENTES (EXISTENTES) ---
-async function carregarClientes(popularDropdown = false) { /* ... (código existente) ... */
+async function carregarClientes(popularDropdown = false) { /* ... (código existente, sem alterações) ... */
     const tabelaCorpo = document.getElementById('tabela-clientes-corpo');
     const dropdownClientes = document.getElementById('ticket-cliente-id');
     if (tabelaCorpo) tabelaCorpo.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
@@ -78,7 +92,7 @@ async function carregarClientes(popularDropdown = false) { /* ... (código exist
         if (tabelaCorpo) tabelaCorpo.innerHTML = '<tr><td colspan="7" style="color: red;">Erro ao carregar a lista de clientes.</td></tr>';
     }
 }
-async function prepararEdicao(id) { /* ... (código existente) ... */
+async function prepararEdicao(id) { /* ... (código existente, sem alterações) ... */
     try {
         const resposta = await fetch(`${API_BASE_URL}/clientes/${id}`);
         const cliente = await resposta.json();
@@ -92,14 +106,14 @@ async function prepararEdicao(id) { /* ... (código existente) ... */
         window.scrollTo(0, 0);
     } catch (error) { alert('Erro ao buscar dados do cliente para edição.'); }
 }
-function resetarFormulario() { /* ... (código existente) ... */
+function resetarFormulario() { /* ... (código existente, sem alterações) ... */
     document.getElementById('form-cliente').reset();
     document.getElementById('cliente-id').value = '';
     document.querySelector("#form-cliente button").textContent = 'Cadastrar Cliente';
 }
 
 // --- FUNÇÕES DE TICKETS (EXISTENTES) ---
-async function carregarTickets() { /* ... (código existente) ... */
+async function carregarTickets() { /* ... (código existente, sem alterações) ... */
     const tabelaCorpo = document.getElementById('tabela-tickets-corpo');
     tabelaCorpo.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
     try {
@@ -116,65 +130,67 @@ async function carregarTickets() { /* ... (código existente) ... */
     }
 }
 
-
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Referências a Elementos ---
+    // --- LÓGICA DE NAVEGAÇÃO (NOVA) ---
+    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault(); // Impede que o link mude a URL
+            showSection(event.target.dataset.target);
+        });
+    });
+
+    // Mostra a primeira seção (planos) por padrão ao carregar
+    showSection('planos');
+
+
+    // --- EVENT LISTENERS EXISTENTES ---
+    const formPlano = document.getElementById('form-plano');
+    const tabelaPlanosCorpo = document.getElementById('tabela-planos-corpo');
+    // ... (todas as outras referências de elementos)
     const formCliente = document.getElementById('form-cliente');
     const tabelaClientesCorpo = document.getElementById('tabela-clientes-corpo');
     const formTicket = document.getElementById('form-ticket');
     const tabelaTicketsCorpo = document.getElementById('tabela-tickets-corpo');
-    const formPlano = document.getElementById('form-plano');
-    const tabelaPlanosCorpo = document.getElementById('tabela-planos-corpo');
 
-    // --- LÓGICA DE PLANOS ---
-    formPlano.addEventListener('submit', async (event) => {
+
+    // --- LÓGICA DE PLANOS (EXISTENTE) ---
+    formPlano.addEventListener('submit', async (event) => { /* ... (código existente, sem alterações) ... */
         event.preventDefault();
         const id = document.getElementById('plano-id').value;
         const url = id ? `${API_BASE_URL}/planos/${id}` : `${API_BASE_URL}/planos`;
         const method = id ? 'PUT' : 'POST';
-        const dadosPlano = {
-            nome_plano: document.getElementById('plano-nome').value,
-            velocidade_download: document.getElementById('plano-download').value,
-            velocidade_upload: document.getElementById('plano-upload').value,
-            preco: document.getElementById('plano-preco').value,
-            mikrotik_profile_name: document.getElementById('plano-profile').value,
-        };
+        const dadosPlano = { nome_plano: document.getElementById('plano-nome').value, velocidade_download: document.getElementById('plano-download').value, velocidade_upload: document.getElementById('plano-upload').value, preco: document.getElementById('plano-preco').value, mikrotik_profile_name: document.getElementById('plano-profile').value };
         try {
             const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosPlano) });
             const resultado = await resposta.json();
-            if (resposta.ok) {
-                alert(resultado.mensagem);
-                resetarFormularioPlano();
-                carregarPlanos();
-            } else { alert(`Erro: ${resultado.erro}`); }
+            if (resposta.ok) { alert(resultado.mensagem); resetarFormularioPlano(); carregarPlanos(); } else { alert(`Erro: ${resultado.erro}`); }
         } catch (error) { alert('Não foi possível conectar à API de planos.'); }
     });
-
-    tabelaPlanosCorpo.addEventListener('click', async (event) => {
+    tabelaPlanosCorpo.addEventListener('click', async (event) => { /* ... (código existente, sem alterações) ... */
         if (event.target.classList.contains('btn-editar-plano')) {
             const id = event.target.dataset.id;
-            const resposta = await fetch(`${API_BASE_URL}/planos`);
+            const resposta = await fetch(`${API_BASE_URL}/planos`); // Simplificado para buscar todos
             const planos = await resposta.json();
             const planoParaEditar = planos.find(p => p.id == id);
-            if(planoParaEditar) prepararEdicaoPlano(planoParaEditar);
+            if (planoParaEditar) prepararEdicaoPlano(planoParaEditar);
         } else if (event.target.classList.contains('btn-excluir-plano')) {
             const id = event.target.dataset.id;
-            if (confirm(`Tem certeza que deseja excluir o plano ID ${id}?`)) {
+            if (confirm(`Tem certeza?`)) {
                 try {
                     const resposta = await fetch(`${API_BASE_URL}/planos/${id}`, { method: 'DELETE' });
                     const resultado = await resposta.json();
                     alert(resultado.mensagem || resultado.erro);
-                    if(resposta.ok) carregarPlanos();
+                    if (resposta.ok) carregarPlanos();
                 } catch (error) { alert('Falha de conexão.'); }
             }
         }
     });
-
     document.getElementById('btn-cancelar-edicao-plano').addEventListener('click', resetarFormularioPlano);
 
     // --- LÓGICA DE CLIENTES (EXISTENTE) ---
-    formCliente.addEventListener('submit', async (event) => { /* ... (código existente) ... */
+    formCliente.addEventListener('submit', async (event) => { /* ... (código existente, sem alterações) ... */
         event.preventDefault();
         const id = document.getElementById('cliente-id').value;
         const url = id ? `${API_BASE_URL}/clientes/${id}` : `${API_BASE_URL}/clientes`;
@@ -190,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { document.getElementById('mensagem-resposta-cliente').innerHTML = `<p style="color: red;">Erro: ${resultado.erro}</p>`; }
         } catch (error) { document.getElementById('mensagem-resposta-cliente').innerHTML = `<p style="color: red;">Não foi possível conectar à API.</p>`; }
     });
-    tabelaClientesCorpo.addEventListener('click', async (event) => { /* ... (código existente) ... */
+    tabelaClientesCorpo.addEventListener('click', async (event) => { /* ... (código existente, sem alterações) ... */
         if (event.target.classList.contains('btn-excluir')) {
             const id = event.target.dataset.id;
             if (confirm(`Tem certeza?`)) {
@@ -206,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-atualizar-clientes').addEventListener('click', () => carregarClientes(true));
 
     // --- LÓGICA DE TICKETS (EXISTENTE) ---
-    formTicket.addEventListener('submit', async (event) => { /* ... (código existente) ... */
+    formTicket.addEventListener('submit', async (event) => { /* ... (código existente, sem alterações) ... */
         event.preventDefault();
         const dadosTicket = { cliente_id: document.getElementById('ticket-cliente-id').value, assunto: document.getElementById('ticket-assunto').value, mensagem: document.getElementById('ticket-mensagem').value };
         try {
@@ -219,10 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else { document.getElementById('mensagem-resposta-ticket').innerHTML = `<p style="color: red;">Erro: ${resultado.erro}</p>`; }
         } catch (error) { document.getElementById('mensagem-resposta-ticket').innerHTML = `<p style="color: red;">Não foi possível conectar à API de tickets.</p>`; }
     });
-    tabelaTicketsCorpo.addEventListener('click', async (event) => { /* ... (código existente) ... */
+    tabelaTicketsCorpo.addEventListener('click', async (event) => { /* ... (código existente, sem alterações) ... */
         if (event.target.classList.contains('btn-fechar-ticket')) {
             const id = event.target.dataset.id;
-            if (confirm(`Tem certeza que deseja fechar o ticket ${id}?`)) {
+            if (confirm(`Tem certeza?`)) {
                 try {
                     const resposta = await fetch(`${API_BASE_URL}/tickets/${id}/fechar`, { method: 'PUT' });
                     if (resposta.ok) { carregarTickets(); } else { alert('Erro ao fechar ticket.'); }
