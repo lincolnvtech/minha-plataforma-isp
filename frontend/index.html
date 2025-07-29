@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Cliente</title>
+    </head>
+<body>
+    <h1>Novo Cliente</h1>
+
+    <form id="form-cliente">
+        <p>
+            <label for="nome">Nome Completo:</label><br>
+            <input type="text" id="nome" name="nome" required>
+        </p>
+        <p>
+            <label for="cpf">CPF:</label><br>
+            <input type="text" id="cpf" name="cpf" required>
+        </p>
+        <p>
+            <label for="endereco">Endereço:</label><br>
+            <input type="text" id="endereco" name="endereco">
+        </p>
+        <p>
+            <label for="login">Login PPPoE:</label><br>
+            <input type="text" id="login" name="login" required>
+        </p>
+        <p>
+            <label for="senha">Senha PPPoE:</label><br>
+            <input type="password" id="senha" name="senha" required>
+        </p>
+        <button type="submit">Cadastrar Cliente</button>
+    </form>
+
+    <div id="mensagem-resposta"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
