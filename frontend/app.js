@@ -5,7 +5,7 @@ if (!localStorage.getItem('usuario_logado')) {
     window.location.href = 'index.html';
 }
 
-const API_BASE_URL = 'http://192.168.18.127:5000'; // Use seu IP
+const API_BASE_URL = 'http://38.159.184.69'; // Use seu IP
 
 // --- FUNÇÃO PARA NAVEGAÇÃO ---
 function showSection(targetId) {
