@@ -20,3 +20,16 @@ CREATE TABLE clientes (
     confianca_usado_em DATE,
     FOREIGN KEY (plano_id) REFERENCES planos(id)
 );
+USE isp_manager;
+
+CREATE TABLE tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    assunto VARCHAR(255) NOT NULL,
+    mensagem TEXT,
+    status ENUM('aberto', 'fechado') DEFAULT 'aberto',
+    data_abertura DATETIME NOT NULL,
+    data_fechamento DATETIME NULL,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+);
+

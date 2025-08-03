@@ -1,11 +1,11 @@
-// app.js - VERSÃO COMPLETA E FINAL DO PAINEL
+// app.js - VERSÃO 100% COMPLETA E FINAL DO PAINEL
 
 // GUARDA DE AUTENTICAÇÃO
 if (!localStorage.getItem('usuario_logado')) {
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }
 
-const API_BASE_URL = 'http://38.159.184.69'; // Use seu IP
+const API_BASE_URL = '/api';
 
 // --- FUNÇÃO PARA NAVEGAÇÃO ---
 function showSection(targetId) {
@@ -21,6 +21,39 @@ function showSection(targetId) {
     });
 }
 
+// --- FUNÇÕES DE USUÁRIOS ---
+async function carregarUsuarios() {
+    const tabelaCorpo = document.getElementById('tabela-usuarios-corpo');
+    tabelaCorpo.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+    try {
+        const resposta = await fetch(`${API_BASE_URL}/usuarios`);
+        const usuarios = await resposta.json();
+        tabelaCorpo.innerHTML = '';
+        usuarios.forEach(usuario => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${usuario.id}</td><td>${usuario.nome}</td><td>${usuario.email}</td><td><button class="btn btn-sm btn-warning btn-editar-usuario" data-id="${usuario.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-usuario" data-id="${usuario.id}">Excluir</button></td>`;
+            tabelaCorpo.appendChild(tr);
+        });
+    } catch (error) {
+        tabelaCorpo.innerHTML = '<tr><td colspan="4" style="color: red;">Erro ao carregar usuários.</td></tr>';
+    }
+}
+function prepararEdicaoUsuario(usuario) {
+    document.getElementById('usuario-id').value = usuario.id;
+    document.getElementById('usuario-nome').value = usuario.nome;
+    document.getElementById('usuario-email').value = usuario.email;
+    document.querySelector("#form-usuario button[type='submit']").textContent = 'Atualizar Usuário';
+    document.getElementById('btn-cancelar-edicao-usuario').classList.remove('d-none');
+    document.getElementById('usuario-senha').required = false;
+}
+function resetarFormularioUsuario() {
+    document.getElementById('form-usuario').reset();
+    document.getElementById('usuario-id').value = '';
+    document.querySelector("#form-usuario button[type='submit']").textContent = 'Salvar Usuário';
+    document.getElementById('btn-cancelar-edicao-usuario').classList.add('d-none');
+    document.getElementById('usuario-senha').required = true;
+}
+
 // --- FUNÇÕES DE PLANOS ---
 async function carregarPlanos() {
     const tabelaCorpo = document.getElementById('tabela-planos-corpo');
@@ -31,18 +64,7 @@ async function carregarPlanos() {
         tabelaCorpo.innerHTML = '';
         planos.forEach(plano => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${plano.id}</td>
-                <td>${plano.nome_plano}</td>
-                <td>${plano.velocidade_download}</td>
-                <td>${plano.velocidade_upload}</td>
-                <td>R$ ${Number(plano.preco).toFixed(2)}</td>
-                <td>${plano.mikrotik_profile_name}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button>
-                </td>
-            `;
+            tr.innerHTML = `<td>${plano.id}</td><td>${plano.nome_plano}</td><td>${plano.velocidade_download}</td><td>${plano.velocidade_upload}</td><td>R$ ${Number(plano.preco).toFixed(2)}</td><td>${plano.mikrotik_profile_name}</td><td><button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button></td>`;
             tabelaCorpo.appendChild(tr);
         });
     } catch (error) {
@@ -135,30 +157,75 @@ async function carregarTickets() {
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Referências
     const btnLogout = document.getElementById('btn-logout');
+    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    const formUsuario = document.getElementById('form-usuario');
+    const tabelaUsuariosCorpo = document.getElementById('tabela-usuarios-corpo');
+    const formPlano = document.getElementById('form-plano');
+    const tabelaPlanosCorpo = document.getElementById('tabela-planos-corpo');
+    const formCliente = document.getElementById('form-cliente');
+    const tabelaClientesCorpo = document.getElementById('tabela-clientes-corpo');
+    const btnNovoUsuario = document.getElementById('btn-novo-usuario');
+    const btnAtualizarClientes = document.getElementById('btn-atualizar-clientes');
+    const formTicket = document.getElementById('form-ticket');
+    const tabelaTicketsCorpo = document.getElementById('tabela-tickets-corpo');
+    const btnAtualizarTickets = document.getElementById('btn-atualizar-tickets');
+    const btnAtualizarPlanos = document.getElementById('btn-atualizar-planos');
+
+    // Logout
     btnLogout.addEventListener('click', () => {
         localStorage.removeItem('usuario_logado');
-        window.location.href = 'index.html';
+        window.location.href = '/';
     });
 
-    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    // Navegação
     navLinks.forEach(link => {
         link.addEventListener('click', (event) => {
             event.preventDefault();
             showSection(event.target.dataset.target);
         });
     });
-    showSection('planos');
 
-    const formPlano = document.getElementById('form-plano');
-    const tabelaPlanosCorpo = document.getElementById('tabela-planos-corpo');
-    const formCliente = document.getElementById('form-cliente');
-    const tabelaClientesCorpo = document.getElementById('tabela-clientes-corpo');
-    const btnAtualizarClientes = document.getElementById('btn-atualizar-clientes');
-    const formTicket = document.getElementById('form-ticket');
-    const tabelaTicketsCorpo = document.getElementById('tabela-tickets-corpo');
-    const btnAtualizarTickets = document.getElementById('btn-atualizar-tickets');
+    // Lógica de Usuários
+    formUsuario.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const id = document.getElementById('usuario-id').value;
+        const url = id ? `${API_BASE_URL}/usuarios/${id}` : `${API_BASE_URL}/usuarios`;
+        const method = id ? 'PUT' : 'POST';
+        const dadosUsuario = { nome: document.getElementById('usuario-nome').value, email: document.getElementById('usuario-email').value };
+        const senha = document.getElementById('usuario-senha').value;
+        if (senha) { dadosUsuario.senha = senha; }
+        else if (!id) { alert('A senha é obrigatória para criar um novo usuário.'); return; }
+        try {
+            const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosUsuario) });
+            const resultado = await resposta.json();
+            alert(resultado.mensagem || resultado.erro);
+            if (resposta.ok) { resetarFormularioUsuario(); carregarUsuarios(); }
+        } catch (error) { alert('Não foi possível conectar à API de usuários.'); }
+    });
+    tabelaUsuariosCorpo.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('btn-editar-usuario')) {
+            const id = event.target.dataset.id;
+            const resposta = await fetch(`${API_BASE_URL}/usuarios`);
+            const usuarios = await resposta.json();
+            const usuarioParaEditar = usuarios.find(u => u.id == id);
+            if(usuarioParaEditar) prepararEdicaoUsuario(usuarioParaEditar);
+        } else if (event.target.classList.contains('btn-excluir-usuario')) {
+            const id = event.target.dataset.id;
+            if (confirm(`Tem certeza?`)) {
+                try {
+                    const resposta = await fetch(`${API_BASE_URL}/usuarios/${id}`, { method: 'DELETE' });
+                    const resultado = await resposta.json();
+                    alert(resultado.mensagem || resultado.erro);
+                    if(resposta.ok) carregarUsuarios();
+                } catch (error) { alert('Falha de conexão.'); }
+            }
+        }
+    });
+    document.getElementById('btn-cancelar-edicao-usuario').addEventListener('click', resetarFormularioUsuario);
 
+    // Lógica de Planos
     formPlano.addEventListener('submit', async (event) => {
         event.preventDefault();
         const id = document.getElementById('plano-id').value;
@@ -191,7 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     document.getElementById('btn-cancelar-edicao-plano').addEventListener('click', resetarFormularioPlano);
+    btnAtualizarPlanos.addEventListener('click', carregarPlanos);
 
+    // Lógica de Clientes
     formCliente.addEventListener('submit', async (event) => {
         event.preventDefault();
         const id = document.getElementById('cliente-id').value;
@@ -223,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     btnAtualizarClientes.addEventListener('click', () => carregarClientes(true));
 
+    // Lógica de Tickets
     formTicket.addEventListener('submit', async (event) => {
         event.preventDefault();
         const dadosTicket = { cliente_id: document.getElementById('ticket-cliente-id').value, assunto: document.getElementById('ticket-assunto').value, mensagem: document.getElementById('ticket-mensagem').value };
@@ -248,8 +318,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     btnAtualizarTickets.addEventListener('click', carregarTickets);
-
+    
+    // CARGA INICIAL
     carregarPlanos();
     carregarClientes(true);
     carregarTickets();
+    carregarUsuarios();
+    
+    showSection('planos');
 });
