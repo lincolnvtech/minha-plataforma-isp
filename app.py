@@ -34,13 +34,7 @@ def default_converter(o):
     if isinstance(o, Decimal): return float(o)
 
 def get_mikrotik_api():
-    connection = RouterOsApiPool(
-        MIKROTIK_HOST,
-        username=MIKROTIK_USER,
-        password=MIKROTIK_PASSWORD,
-        port=MIKROTIK_PORT,
-        plaintext_login=True
-    )
+    connection = RouterOsApiPool(MIKROTIK_HOST, username=MIKROTIK_USER, password=MIKROTIK_PASSWORD, port=MIKROTIK_PORT, plaintext_login=True)
     return connection.get_api()
 
 # --- ROTAS PARA SERVIR O FRONT-END ---
@@ -146,7 +140,7 @@ def deletar_usuario(id):
         return jsonify({"erro": "Erro ao deletar usuario."}), 500
     finally:
         if conn and conn.is_connected(): conn.close()
-
+        
 @app.route('/api/planos', methods=['GET'])
 def listar_planos():
     conn = None
@@ -220,7 +214,7 @@ def listar_clientes():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT c.id, c.nome_completo, c.cpf, c.login_pppoe, c.status, p.nome_plano FROM clientes c LEFT JOIN planos p ON c.plano_id = p.id ORDER BY c.id DESC"
+        query = "SELECT c.id, c.nome_completo, c.cnpj_cpf, c.login_pppoe, c.status, p.nome_plano FROM clientes c LEFT JOIN planos p ON c.plano_id = p.id ORDER BY c.id DESC"
         cursor.execute(query)
         clientes = cursor.fetchall()
         response_body = json.dumps(clientes, default=default_converter)
@@ -254,12 +248,10 @@ def adicionar_cliente():
         cursor.execute("SELECT mikrotik_profile_name FROM planos WHERE id = %s", (dados['plano_id'],))
         plano = cursor.fetchone()
         if not plano: return jsonify({"erro": f"Plano com ID {dados['plano_id']} nao encontrado"}), 404
-
-        sql = "INSERT INTO clientes (nome_completo, cpf, data_cadastro, endereco, plano_id, login_pppoe, senha_pppoe, status) VALUES (%s, %s, CURDATE(), %s, %s, %s, %s, 'ativo')"
-        val = (dados['nome_completo'], dados['cpf'], dados['endereco'], dados['plano_id'], dados['login_pppoe'], dados['senha_pppoe'])
+        sql = "INSERT INTO clientes (nome_completo, cnpj_cpf, rg, data_cadastro, endereco, bairro, numero, complemento, plano_id, login_pppoe, senha_pppoe, status) VALUES (%s, %s, %s, CURDATE(), %s, %s, %s, %s, %s, %s, %s, 'ativo')"
+        val = (dados['nome_completo'], dados['cnpj_cpf'], dados.get('rg'), dados.get('endereco'), dados.get('bairro'), dados.get('numero'), dados.get('complemento'), dados['plano_id'], dados['login_pppoe'], dados['senha_pppoe'])
         cursor.execute(sql, val)
         conn.commit()
-
         try:
             api = get_mikrotik_api()
             ppp_secret = api.get_resource('/ppp/secret')
@@ -267,7 +259,6 @@ def adicionar_cliente():
         except Exception as e:
             print(f"ERRO MIKROTIK (ADICIONAR): {e}")
             pass
-
         return jsonify({"mensagem": "Cliente cadastrado com sucesso!"}), 201
     except Exception as e:
         if conn: conn.rollback()
@@ -282,12 +273,11 @@ def atualizar_cliente(id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        sql = "UPDATE clientes SET nome_completo=%s, cpf=%s, endereco=%s, login_pppoe=%s, senha_pppoe=%s, plano_id=%s WHERE id=%s"
-        val = (dados['nome_completo'], dados['cpf'], dados['endereco'], dados['login_pppoe'], dados['senha_pppoe'], dados.get('plano_id'), id)
+        sql = "UPDATE clientes SET nome_completo=%s, cnpj_cpf=%s, rg=%s, endereco=%s, bairro=%s, numero=%s, complemento=%s, login_pppoe=%s, senha_pppoe=%s, plano_id=%s WHERE id=%s"
+        val = (dados['nome_completo'], dados['cnpj_cpf'], dados.get('rg'), dados.get('endereco'), dados.get('bairro'), dados.get('numero'), dados.get('complemento'), dados['login_pppoe'], dados['senha_pppoe'], dados.get('plano_id'), id)
         cursor.execute(sql, val)
         if cursor.rowcount == 0: return jsonify({"erro": "Cliente nao encontrado"}), 404
         conn.commit()
-
         try:
             api = get_mikrotik_api()
             ppp_secret = api.get_resource('/ppp/secret')
@@ -298,7 +288,6 @@ def atualizar_cliente(id):
         except Exception as e:
             print(f"ERRO MIKROTIK (ATUALIZAR): {e}")
             pass
-
         return jsonify({"mensagem": "Cliente atualizado com sucesso!"}), 200
     except Exception as e:
         if conn: conn.rollback()
@@ -317,11 +306,9 @@ def deletar_cliente(id):
         cliente = cursor.fetchone()
         if cliente:
             login_pppoe_para_deletar = cliente['login_pppoe']
-
         cursor.execute("DELETE FROM clientes WHERE id = %s", (id,))
         if cursor.rowcount == 0: return jsonify({"erro": "Cliente nao encontrado"}), 404
         conn.commit()
-
         if login_pppoe_para_deletar:
             try:
                 api = get_mikrotik_api()
@@ -333,7 +320,6 @@ def deletar_cliente(id):
             except Exception as e:
                 print(f"ERRO MIKROTIK (DELETAR): {e}")
                 pass
-
         return jsonify({"mensagem": "Cliente deletado com sucesso!"}), 200
     except Exception as e:
         if conn: conn.rollback()
@@ -390,7 +376,7 @@ def fechar_ticket(id):
         return jsonify({"erro": str(e)}), 500
     finally:
         if conn and conn.is_connected(): conn.close()
-
+        
 # --- Bloco para iniciar a aplicação ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

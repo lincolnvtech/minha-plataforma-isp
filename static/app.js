@@ -32,15 +32,7 @@ async function carregarUsuarios() {
         tabelaCorpo.innerHTML = '';
         usuarios.forEach(usuario => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${usuario.id}</td>
-                <td>${usuario.nome}</td>
-                <td>${usuario.email}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-editar-usuario" data-id="${usuario.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-excluir-usuario" data-id="${usuario.id}">Excluir</button>
-                </td>
-            `;
+            tr.innerHTML = `<td>${usuario.id}</td><td>${usuario.nome}</td><td>${usuario.email}</td><td><button class="btn btn-sm btn-warning btn-editar-usuario" data-id="${usuario.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-usuario" data-id="${usuario.id}">Excluir</button></td>`;
             tabelaCorpo.appendChild(tr);
         });
     } catch (error) {
@@ -74,18 +66,7 @@ async function carregarPlanos() {
         tabelaCorpo.innerHTML = '';
         planos.forEach(plano => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${plano.id}</td>
-                <td>${plano.nome_plano}</td>
-                <td>${plano.velocidade_download}</td>
-                <td>${plano.velocidade_upload}</td>
-                <td>R$ ${Number(plano.preco).toFixed(2)}</td>
-                <td>${plano.mikrotik_profile_name}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button>
-                </td>
-            `;
+            tr.innerHTML = `<td>${plano.id}</td><td>${plano.nome_plano}</td><td>${plano.velocidade_download}</td><td>${plano.velocidade_upload}</td><td>R$ ${Number(plano.preco).toFixed(2)}</td><td>${plano.mikrotik_profile_name}</td><td><button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button></td>`;
             tabelaCorpo.appendChild(tr);
         });
     } catch (error) {
@@ -136,7 +117,7 @@ async function carregarClientes(popularDropdown = false) {
             tabelaCorpo.innerHTML = '';
             clientes.forEach(cliente => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${cliente.id}</td><td>${cliente.nome_completo}</td><td>${cliente.cpf}</td><td>${cliente.login_pppoe}</td><td>${cliente.nome_plano || 'N/A'}</td><td>${cliente.status}</td><td><button class="btn btn-sm btn-warning btn-editar" data-id="${cliente.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir" data-id="${cliente.id}">Excluir</button></td>`;
+                tr.innerHTML = `<td>${cliente.id}</td><td>${cliente.nome_completo}</td><td>${cliente.cnpj_cpf}</td><td>${cliente.login_pppoe}</td><td>${cliente.nome_plano || 'N/A'}</td><td>${cliente.status}</td><td><button class="btn btn-sm btn-warning btn-editar" data-id="${cliente.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir" data-id="${cliente.id}">Excluir</button></td>`;
                 tabelaCorpo.appendChild(tr);
             });
         }
@@ -158,15 +139,17 @@ async function prepararEdicao(id) {
         const resposta = await fetch(`${API_BASE_URL}/clientes/${id}`);
         if (!resposta.ok) throw new Error('Cliente nao encontrado na API');
         const cliente = await resposta.json();
-
         document.getElementById('cliente-id').value = cliente.id;
         document.getElementById('nome').value = cliente.nome_completo;
-        document.getElementById('cpf').value = cliente.cpf;
+        document.getElementById('cnpj_cpf').value = cliente.cnpj_cpf;
+        document.getElementById('rg').value = cliente.rg;
         document.getElementById('endereco').value = cliente.endereco;
+        document.getElementById('bairro').value = cliente.bairro;
+        document.getElementById('numero').value = cliente.numero;
+        document.getElementById('complemento').value = cliente.complemento;
         document.getElementById('login').value = cliente.login_pppoe;
         document.getElementById('senha').value = cliente.senha_pppoe;
-        document.getElementById('cliente-plano-id').value = cliente.plano_id; // <-- A CORREÇÃO ESTÁ AQUI
-
+        document.getElementById('cliente-plano-id').value = cliente.plano_id;
         document.querySelector("#form-cliente button").textContent = 'Salvar Alterações';
         window.scrollTo(0, 0);
     } catch (error) { 
@@ -204,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Referências
     const btnLogout = document.getElementById('btn-logout');
     const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
-
+    
     // Logout
     btnLogout.addEventListener('click', () => {
         localStorage.removeItem('usuario_logado');
@@ -218,11 +201,12 @@ document.addEventListener('DOMContentLoaded', () => {
             showSection(event.target.dataset.target);
         });
     });
-
+    
     // --- LÓGICA DE CADA SEÇÃO ---
     const formUsuario = document.getElementById('form-usuario');
     if (formUsuario) {
         const tabelaUsuariosCorpo = document.getElementById('tabela-usuarios-corpo');
+        const btnNovoUsuario = document.getElementById('btn-novo-usuario');
         formUsuario.addEventListener('submit', async (event) => {
             event.preventDefault();
             const id = document.getElementById('usuario-id').value;
@@ -230,8 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const method = id ? 'PUT' : 'POST';
             const dadosUsuario = { nome: document.getElementById('usuario-nome').value, email: document.getElementById('usuario-email').value };
             const senha = document.getElementById('usuario-senha').value;
-            if (senha) { dadosUsuario.senha = senha; }
-            else if (!id) { alert('A senha é obrigatória para criar um novo usuário.'); return; }
+            if (senha) { dadosUsuario.senha = senha; } else if (!id) { alert('A senha é obrigatória para criar um novo usuário.'); return; }
             try {
                 const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosUsuario) });
                 const resultado = await resposta.json();
@@ -259,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         document.getElementById('btn-cancelar-edicao-usuario').addEventListener('click', resetarFormularioUsuario);
+        btnNovoUsuario.addEventListener('click', () => { resetarFormularioUsuario(); window.scrollTo(0, 0); });
     }
 
     const formPlano = document.getElementById('form-plano');
@@ -309,7 +293,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = document.getElementById('cliente-id').value;
             const url = id ? `${API_BASE_URL}/clientes/${id}` : `${API_BASE_URL}/clientes`;
             const method = id ? 'PUT' : 'POST';
-            const dadosCliente = { nome_completo: document.getElementById('nome').value, cpf: document.getElementById('cpf').value, endereco: document.getElementById('endereco').value, login_pppoe: document.getElementById('login').value, senha_pppoe: document.getElementById('senha').value, plano_id: document.getElementById('cliente-plano-id').value };
+            const dadosCliente = { 
+                nome_completo: document.getElementById('nome').value, 
+                cnpj_cpf: document.getElementById('cnpj_cpf').value,
+                rg: document.getElementById('rg').value,
+                endereco: document.getElementById('endereco').value,
+                bairro: document.getElementById('bairro').value,
+                numero: document.getElementById('numero').value,
+                complemento: document.getElementById('complemento').value,
+                login_pppoe: document.getElementById('login').value, 
+                senha_pppoe: document.getElementById('senha').value, 
+                plano_id: document.getElementById('cliente-plano-id').value 
+            };
             try {
                 const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosCliente) });
                 const resultado = await resposta.json();
@@ -335,6 +330,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         btnAtualizarClientes.addEventListener('click', () => carregarClientes(true));
+        const btnVerSenha = document.getElementById('btn-ver-senha');
+        if (btnVerSenha) {
+            const campoSenha = document.getElementById('senha');
+            btnVerSenha.addEventListener('click', () => {
+                if (campoSenha.type === 'password') {
+                    campoSenha.type = 'text';
+                    btnVerSenha.textContent = '🙈';
+                } else {
+                    campoSenha.type = 'password';
+                    btnVerSenha.textContent = '👁️';
+                }
+            });
+        }
     }
 
     const formTicket = document.getElementById('form-ticket');
@@ -368,12 +376,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         btnAtualizarTickets.addEventListener('click', carregarTickets);
     }
-
-    // Carga Inicial de Dados
+    
+    // CARGA INICIAL DE DADOS
     carregarPlanos();
-    carregarClientes(true); // O true também popula o dropdown de tickets
+    carregarClientes(true);
     carregarTickets();
     carregarUsuarios();
-
+    popularDropdownPlanos();
+    
     showSection('planos'); // Define a seção inicial
 });
