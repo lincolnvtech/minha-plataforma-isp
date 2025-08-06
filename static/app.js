@@ -1,388 +1,208 @@
-// app.js - VERSÃO 100% COMPLETA E FINAL DO PAINEL
-
-// GUARDA DE AUTENTICAÇÃO
-if (!localStorage.getItem('usuario_logado')) {
-    window.location.href = '/';
-}
-
-const API_BASE_URL = '/api';
-
-// --- FUNÇÃO PARA NAVEGAÇÃO ---
-function showSection(targetId) {
-    document.querySelectorAll('.page-section').forEach(section => {
-        section.style.display = 'none';
-    });
-    const targetSection = document.getElementById(targetId);
-    if (targetSection) {
-        targetSection.style.display = 'block';
-    }
-    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
-        link.classList.toggle('active', link.dataset.target === targetId);
-    });
-}
-
-// --- FUNÇÕES DE USUÁRIOS ---
-async function carregarUsuarios() {
-    const tabelaCorpo = document.getElementById('tabela-usuarios-corpo');
-    if (!tabelaCorpo) return;
-    tabelaCorpo.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/usuarios`);
-        const usuarios = await resposta.json();
-        tabelaCorpo.innerHTML = '';
-        usuarios.forEach(usuario => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${usuario.id}</td><td>${usuario.nome}</td><td>${usuario.email}</td><td><button class="btn btn-sm btn-warning btn-editar-usuario" data-id="${usuario.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-usuario" data-id="${usuario.id}">Excluir</button></td>`;
-            tabelaCorpo.appendChild(tr);
-        });
-    } catch (error) {
-        tabelaCorpo.innerHTML = '<tr><td colspan="4" style="color: red;">Erro ao carregar usuários.</td></tr>';
-    }
-}
-function prepararEdicaoUsuario(usuario) {
-    document.getElementById('usuario-id').value = usuario.id;
-    document.getElementById('usuario-nome').value = usuario.nome;
-    document.getElementById('usuario-email').value = usuario.email;
-    document.querySelector("#form-usuario button[type='submit']").textContent = 'Atualizar Usuário';
-    document.getElementById('btn-cancelar-edicao-usuario').classList.remove('d-none');
-    document.getElementById('usuario-senha').required = false;
-}
-function resetarFormularioUsuario() {
-    document.getElementById('form-usuario').reset();
-    document.getElementById('usuario-id').value = '';
-    document.querySelector("#form-usuario button[type='submit']").textContent = 'Salvar Usuário';
-    document.getElementById('btn-cancelar-edicao-usuario').classList.add('d-none');
-    document.getElementById('usuario-senha').required = true;
-}
-
-// --- FUNÇÕES DE PLANOS ---
-async function carregarPlanos() {
-    const tabelaCorpo = document.getElementById('tabela-planos-corpo');
-    if (!tabelaCorpo) return;
-    tabelaCorpo.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/planos`);
-        const planos = await resposta.json();
-        tabelaCorpo.innerHTML = '';
-        planos.forEach(plano => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${plano.id}</td><td>${plano.nome_plano}</td><td>${plano.velocidade_download}</td><td>${plano.velocidade_upload}</td><td>R$ ${Number(plano.preco).toFixed(2)}</td><td>${plano.mikrotik_profile_name}</td><td><button class="btn btn-sm btn-warning btn-editar-plano" data-id="${plano.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir-plano" data-id="${plano.id}">Excluir</button></td>`;
-            tabelaCorpo.appendChild(tr);
-        });
-    } catch (error) {
-        tabelaCorpo.innerHTML = '<tr><td colspan="7" style="color: red;">Erro ao carregar planos.</td></tr>';
-    }
-}
-async function popularDropdownPlanos() {
-    const dropdownPlanos = document.getElementById('cliente-plano-id');
-    if(!dropdownPlanos) return;
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/planos`);
-        const planos = await resposta.json();
-        while (dropdownPlanos.options.length > 1) { dropdownPlanos.remove(1); }
-        planos.forEach(plano => {
-            const option = document.createElement('option');
-            option.value = plano.id;
-            option.textContent = plano.nome_plano;
-            dropdownPlanos.appendChild(option);
-        });
-    } catch (error) { console.error("Erro ao popular dropdown de planos:", error); }
-}
-function prepararEdicaoPlano(plano) {
-    document.getElementById('plano-id').value = plano.id;
-    document.getElementById('plano-nome').value = plano.nome_plano;
-    document.getElementById('plano-download').value = plano.velocidade_download;
-    document.getElementById('plano-upload').value = plano.velocidade_upload;
-    document.getElementById('plano-preco').value = plano.preco;
-    document.getElementById('plano-profile').value = plano.mikrotik_profile_name;
-    document.querySelector("#form-plano button[type='submit']").textContent = 'Atualizar Plano';
-    document.getElementById('btn-cancelar-edicao-plano').classList.remove('d-none');
-}
-function resetarFormularioPlano() {
-    document.getElementById('form-plano').reset();
-    document.getElementById('plano-id').value = '';
-    document.querySelector("#form-plano button[type='submit']").textContent = 'Salvar Plano';
-    document.getElementById('btn-cancelar-edicao-plano').classList.add('d-none');
-}
-
-// --- FUNÇÕES DE CLIENTES ---
-async function carregarClientes(popularDropdown = false) {
-    const tabelaCorpo = document.getElementById('tabela-clientes-corpo');
-    const dropdownClientes = document.getElementById('ticket-cliente-id');
-    if (tabelaCorpo) tabelaCorpo.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/clientes`);
-        const clientes = await resposta.json();
-        if (tabelaCorpo) {
-            tabelaCorpo.innerHTML = '';
-            clientes.forEach(cliente => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${cliente.id}</td><td>${cliente.nome_completo}</td><td>${cliente.cnpj_cpf}</td><td>${cliente.login_pppoe}</td><td>${cliente.nome_plano || 'N/A'}</td><td>${cliente.status}</td><td><button class="btn btn-sm btn-warning btn-editar" data-id="${cliente.id}">Editar</button> <button class="btn btn-sm btn-danger btn-excluir" data-id="${cliente.id}">Excluir</button></td>`;
-                tabelaCorpo.appendChild(tr);
-            });
-        }
-        if (popularDropdown && dropdownClientes) {
-            while (dropdownClientes.options.length > 1) { dropdownClientes.remove(1); }
-            clientes.forEach(cliente => {
-                const option = document.createElement('option');
-                option.value = cliente.id;
-                option.textContent = `${cliente.id} - ${cliente.nome_completo}`;
-                dropdownClientes.appendChild(option);
-            });
-        }
-    } catch (error) {
-        if (tabelaCorpo) tabelaCorpo.innerHTML = '<tr><td colspan="7" style="color: red;">Erro ao carregar a lista de clientes.</td></tr>';
-    }
-}
-async function prepararEdicao(id) {
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/clientes/${id}`);
-        if (!resposta.ok) throw new Error('Cliente nao encontrado na API');
-        const cliente = await resposta.json();
-        document.getElementById('cliente-id').value = cliente.id;
-        document.getElementById('nome').value = cliente.nome_completo;
-        document.getElementById('cnpj_cpf').value = cliente.cnpj_cpf;
-        document.getElementById('rg').value = cliente.rg;
-        document.getElementById('endereco').value = cliente.endereco;
-        document.getElementById('bairro').value = cliente.bairro;
-        document.getElementById('numero').value = cliente.numero;
-        document.getElementById('complemento').value = cliente.complemento;
-        document.getElementById('login').value = cliente.login_pppoe;
-        document.getElementById('senha').value = cliente.senha_pppoe;
-        document.getElementById('cliente-plano-id').value = cliente.plano_id;
-        document.querySelector("#form-cliente button").textContent = 'Salvar Alterações';
-        window.scrollTo(0, 0);
-    } catch (error) { 
-        console.error("Erro em prepararEdicao:", error);
-        alert('Erro ao buscar dados do cliente para edição.'); 
-    }
-}
-function resetarFormulario() {
-    document.getElementById('form-cliente').reset();
-    document.getElementById('cliente-id').value = '';
-    document.querySelector("#form-cliente button").textContent = 'Cadastrar Cliente';
-}
-
-// --- FUNÇÕES DE TICKETS ---
-async function carregarTickets() {
-    const tabelaCorpo = document.getElementById('tabela-tickets-corpo');
-    if(!tabelaCorpo) return;
-    tabelaCorpo.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
-    try {
-        const resposta = await fetch(`${API_BASE_URL}/tickets`);
-        const tickets = await resposta.json();
-        tabelaCorpo.innerHTML = '';
-        tickets.forEach(ticket => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${ticket.id}</td><td>${ticket.cliente_nome}</td><td>${ticket.assunto}</td><td>${new Date(ticket.data_abertura).toLocaleString('pt-BR')}</td><td>${ticket.status}</td><td>${ticket.status === 'aberto' ? `<button class="btn btn-sm btn-info btn-fechar-ticket" data-id="${ticket.id}">Fechar</button>` : 'Fechado'}</td>`;
-            tabelaCorpo.appendChild(tr);
-        });
-    } catch (error) {
-        tabelaCorpo.innerHTML = '<tr><td colspan="6" style="color: red;">Erro ao carregar tickets.</td></tr>';
-    }
-}
-
-// --- EVENT LISTENER PRINCIPAL ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Referências
-    const btnLogout = document.getElementById('btn-logout');
-    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+// Espera o conteúdo da página carregar completamente para rodar o script.
+document.addEventListener('DOMContentLoaded', function () {
     
-    // Logout
-    btnLogout.addEventListener('click', () => {
-        localStorage.removeItem('usuario_logado');
-        window.location.href = '/';
-    });
+    // --- LÓGICA DE NAVEGAÇÃO ---
+    const navLinks = document.querySelectorAll('.sidebar .nav-link');
+    const pageSections = document.querySelectorAll('.page-section');
+    const defaultSection = 'dashboard';
 
-    // Navegação
+    // Função para mostrar a seção correta e atualizar o link ativo
+    function showSection(targetId) {
+        pageSections.forEach(section => {
+            section.style.display = 'none';
+        });
+        navLinks.forEach(l => l.classList.remove('active'));
+
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+
+        const activeLink = document.querySelector(`.nav-link[data-target="${targetId}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+
+    // Adiciona evento de clique aos links da sidebar
     navLinks.forEach(link => {
-        link.addEventListener('click', (event) => {
-            event.preventDefault();
-            showSection(event.target.dataset.target);
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = this.getAttribute('data-target');
+            showSection(target);
+            
+            // Carrega os dados da seção clicada
+            // (Ex: se clicar em 'Clientes', chama a função para carregar clientes)
+            window.loadDataForSection(target);
         });
     });
-    
-    // --- LÓGICA DE CADA SEÇÃO ---
-    const formUsuario = document.getElementById('form-usuario');
-    if (formUsuario) {
-        const tabelaUsuariosCorpo = document.getElementById('tabela-usuarios-corpo');
-        const btnNovoUsuario = document.getElementById('btn-novo-usuario');
-        formUsuario.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const id = document.getElementById('usuario-id').value;
-            const url = id ? `${API_BASE_URL}/usuarios/${id}` : `${API_BASE_URL}/usuarios`;
-            const method = id ? 'PUT' : 'POST';
-            const dadosUsuario = { nome: document.getElementById('usuario-nome').value, email: document.getElementById('usuario-email').value };
-            const senha = document.getElementById('usuario-senha').value;
-            if (senha) { dadosUsuario.senha = senha; } else if (!id) { alert('A senha é obrigatória para criar um novo usuário.'); return; }
-            try {
-                const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosUsuario) });
-                const resultado = await resposta.json();
-                alert(resultado.mensagem || resultado.erro);
-                if (resposta.ok) { resetarFormularioUsuario(); carregarUsuarios(); }
-            } catch (error) { alert('Não foi possível conectar à API de usuários.'); }
-        });
-        tabelaUsuariosCorpo.addEventListener('click', async (event) => {
-            if (event.target.classList.contains('btn-editar-usuario')) {
-                const id = event.target.dataset.id;
-                const resposta = await fetch(`${API_BASE_URL}/usuarios`);
-                const usuarios = await resposta.json();
-                const usuarioParaEditar = usuarios.find(u => u.id == id);
-                if(usuarioParaEditar) prepararEdicaoUsuario(usuarioParaEditar);
-            } else if (event.target.classList.contains('btn-excluir-usuario')) {
-                const id = event.target.dataset.id;
-                if (confirm(`Tem certeza?`)) {
-                    try {
-                        const resposta = await fetch(`${API_BASE_URL}/usuarios/${id}`, { method: 'DELETE' });
-                        const resultado = await resposta.json();
-                        alert(resultado.mensagem || resultado.erro);
-                        if(resposta.ok) carregarUsuarios();
-                    } catch (error) { alert('Falha de conexão.'); }
-                }
-            }
-        });
-        document.getElementById('btn-cancelar-edicao-usuario').addEventListener('click', resetarFormularioUsuario);
-        btnNovoUsuario.addEventListener('click', () => { resetarFormularioUsuario(); window.scrollTo(0, 0); });
-    }
 
-    const formPlano = document.getElementById('form-plano');
-    if (formPlano) {
-        const tabelaPlanosCorpo = document.getElementById('tabela-planos-corpo');
-        const btnAtualizarPlanos = document.getElementById('btn-atualizar-planos');
-        formPlano.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const id = document.getElementById('plano-id').value;
-            const url = id ? `${API_BASE_URL}/planos/${id}` : `${API_BASE_URL}/planos`;
-            const method = id ? 'PUT' : 'POST';
-            const dadosPlano = { nome_plano: document.getElementById('plano-nome').value, velocidade_download: document.getElementById('plano-download').value, velocidade_upload: document.getElementById('plano-upload').value, preco: document.getElementById('plano-preco').value, mikrotik_profile_name: document.getElementById('plano-profile').value };
-            try {
-                const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosPlano) });
-                const resultado = await resposta.json();
-                if (resposta.ok) { alert(resultado.mensagem); resetarFormularioPlano(); carregarPlanos(); popularDropdownPlanos(); } else { alert(`Erro: ${resultado.erro}`); }
-            } catch (error) { alert('Não foi possível conectar à API de planos.'); }
-        });
-        tabelaPlanosCorpo.addEventListener('click', async (event) => {
-            if (event.target.classList.contains('btn-editar-plano')) {
-                const id = event.target.dataset.id;
-                const resposta = await fetch(`${API_BASE_URL}/planos`);
-                const planos = await resposta.json();
-                const planoParaEditar = planos.find(p => p.id == id);
-                if (planoParaEditar) prepararEdicaoPlano(planoParaEditar);
-            } else if (event.target.classList.contains('btn-excluir-plano')) {
-                const id = event.target.dataset.id;
-                if (confirm(`Tem certeza?`)) {
-                    try {
-                        const resposta = await fetch(`${API_BASE_URL}/planos/${id}`, { method: 'DELETE' });
-                        const resultado = await resposta.json();
-                        alert(resultado.mensagem || resultado.erro);
-                        if (resposta.ok) { carregarPlanos(); popularDropdownPlanos(); }
-                    } catch (error) { alert('Falha de conexão.'); }
-                }
-            }
-        });
-        document.getElementById('btn-cancelar-edicao-plano').addEventListener('click', resetarFormularioPlano);
-        btnAtualizarPlanos.addEventListener('click', carregarPlanos);
-    }
+    // --- CARREGAMENTO DE DADOS E EVENTOS POR SEÇÃO ---
 
-    const formCliente = document.getElementById('form-cliente');
-    if (formCliente) {
-        const tabelaClientesCorpo = document.getElementById('tabela-clientes-corpo');
-        const btnAtualizarClientes = document.getElementById('btn-atualizar-clientes');
-        formCliente.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const id = document.getElementById('cliente-id').value;
-            const url = id ? `${API_BASE_URL}/clientes/${id}` : `${API_BASE_URL}/clientes`;
-            const method = id ? 'PUT' : 'POST';
-            const dadosCliente = { 
-                nome_completo: document.getElementById('nome').value, 
-                cnpj_cpf: document.getElementById('cnpj_cpf').value,
-                rg: document.getElementById('rg').value,
-                endereco: document.getElementById('endereco').value,
-                bairro: document.getElementById('bairro').value,
-                numero: document.getElementById('numero').value,
-                complemento: document.getElementById('complemento').value,
-                login_pppoe: document.getElementById('login').value, 
-                senha_pppoe: document.getElementById('senha').value, 
-                plano_id: document.getElementById('cliente-plano-id').value 
-            };
-            try {
-                const resposta = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosCliente) });
-                const resultado = await resposta.json();
-                const divRespostaCliente = document.getElementById('mensagem-resposta-cliente');
-                if (resposta.ok) {
-                    divRespostaCliente.innerHTML = `<p style="color: green;">${resultado.mensagem}</p>`;
-                    resetarFormulario();
-                    carregarClientes(true);
-                } else { divRespostaCliente.innerHTML = `<p style="color: red;">Erro: ${resultado.erro}</p>`; }
-            } catch (error) { document.getElementById('mensagem-resposta-cliente').innerHTML = `<p style="color: red;">Não foi possível conectar à API.</p>`; }
-        });
-        tabelaClientesCorpo.addEventListener('click', async (event) => {
-            if (event.target.classList.contains('btn-excluir')) {
-                const id = event.target.dataset.id;
-                if (confirm(`Tem certeza?`)) {
-                    try {
-                        const resposta = await fetch(`${API_BASE_URL}/clientes/${id}`, { method: 'DELETE' });
-                        if (resposta.ok) { carregarClientes(true); } else { alert('Erro ao excluir.'); }
-                    } catch (error) { alert('Falha de conexão.'); }
-                }
-            } else if (event.target.classList.contains('btn-editar')) {
-                prepararEdicao(event.target.dataset.id);
-            }
-        });
-        btnAtualizarClientes.addEventListener('click', () => carregarClientes(true));
-        const btnVerSenha = document.getElementById('btn-ver-senha');
-        if (btnVerSenha) {
-            const campoSenha = document.getElementById('senha');
-            btnVerSenha.addEventListener('click', () => {
-                if (campoSenha.type === 'password') {
-                    campoSenha.type = 'text';
-                    btnVerSenha.textContent = '🙈';
-                } else {
-                    campoSenha.type = 'password';
-                    btnVerSenha.textContent = '👁️';
-                }
+    // Objeto para centralizar funções de carregamento
+    window.loadDataForSection = (sectionId) => {
+        switch(sectionId) {
+            case 'dashboard':
+                // Carregar dados dos KPIs (indicadores)
+                // Ex: fetch('/api/kpis').then(...)
+                document.getElementById('kpi-clientes').textContent = '1254';
+                document.getElementById('kpi-tickets').textContent = '12';
+                document.getElementById('kpi-olts').textContent = '4';
+                document.getElementById('kpi-planos').textContent = '15';
+                break;
+            case 'provedor':
+                loadOLTs();
+                break;
+            case 'clientes':
+                loadClientes();
+                loadPlanosParaSelect('cliente-plano-id');
+                break;
+            case 'planos':
+                loadPlanos();
+                break;
+            case 'tickets':
+                loadTickets();
+                loadClientesParaSelect('ticket-cliente-id');
+                break;
+            case 'usuarios':
+                loadUsuarios();
+                break;
+        }
+    };
+
+    // Função genérica para carregar dados em selects
+    async function loadItensParaSelect(url, selectId, textKey, valueKey) {
+        const select = document.getElementById(selectId);
+        // Limpa opções antigas, exceto a primeira ("Selecione...")
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        try {
+            // const response = await fetch(url);
+            // const data = await response.json();
+            // --- DADOS DE EXEMPLO ---
+            const data = (url.includes('planos')) 
+                ? [{id: 1, nome: 'Fibra 300Mb'}, {id: 2, nome: 'Fibra 500Mb'}] 
+                : [{id: 1, nome_completo: 'João da Silva'}, {id: 2, nome_completo: 'Maria Oliveira'}];
+            // --- FIM DOS DADOS DE EXEMPLO ---
+            data.forEach(item => {
+                const option = new Option(item[textKey], item[valueKey]);
+                select.add(option);
             });
+        } catch (error) {
+            console.error(`Erro ao carregar ${url}:`, error);
         }
     }
 
-    const formTicket = document.getElementById('form-ticket');
-    if (formTicket) {
-        const tabelaTicketsCorpo = document.getElementById('tabela-tickets-corpo');
-        const btnAtualizarTickets = document.getElementById('btn-atualizar-tickets');
-        formTicket.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const dadosTicket = { cliente_id: document.getElementById('ticket-cliente-id').value, assunto: document.getElementById('ticket-assunto').value, mensagem: document.getElementById('ticket-mensagem').value };
-            try {
-                const resposta = await fetch(`${API_BASE_URL}/tickets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dadosTicket) });
-                const resultado = await resposta.json();
-                const divRespostaTicket = document.getElementById('mensagem-resposta-ticket');
-                if (resposta.ok) {
-                    divRespostaTicket.innerHTML = `<p style="color: green;">${resultado.mensagem}</p>`;
-                    formTicket.reset();
-                    carregarTickets();
-                } else { divRespostaTicket.innerHTML = `<p style="color: red;">Erro: ${resultado.erro}</p>`; }
-            } catch (error) { document.getElementById('mensagem-resposta-ticket').innerHTML = `<p style="color: red;">Não foi possível conectar à API de tickets.</p>`; }
-        });
-        tabelaTicketsCorpo.addEventListener('click', async (event) => {
-            if (event.target.classList.contains('btn-fechar-ticket')) {
-                const id = event.target.dataset.id;
-                if (confirm(`Tem certeza?`)) {
-                    try {
-                        const resposta = await fetch(`${API_BASE_URL}/tickets/${id}/fechar`, { method: 'PUT' });
-                        if (resposta.ok) { carregarTickets(); } else { alert('Erro ao fechar ticket.'); }
-                    } catch (error) { alert('Falha de conexão.'); }
-                }
-            }
-        });
-        btnAtualizarTickets.addEventListener('click', carregarTickets);
+    function loadPlanosParaSelect(selectId) {
+        loadItensParaSelect('/api/planos', selectId, 'nome', 'id');
     }
     
-    // CARGA INICIAL DE DADOS
-    carregarPlanos();
-    carregarClientes(true);
-    carregarTickets();
-    carregarUsuarios();
-    popularDropdownPlanos();
+    function loadClientesParaSelect(selectId) {
+        loadItensParaSelect('/api/clientes', selectId, 'nome_completo', 'id');
+    }
+
+    // --- SEÇÃO: PROVEDOR ---
+    function loadOLTs() {
+        console.log("Carregando OLTs...");
+        // Exemplo: fetch('/api/olts').then(res => res.json()).then(data => { ... });
+        const tabelaCorpo = document.getElementById('tabela-olts-corpo');
+        tabelaCorpo.innerHTML = `
+            <tr>
+                <td>1</td>
+                <td>OLT Principal</td>
+                <td>192.168.0.1</td>
+                <td>FiberHome</td>
+                <td>admin</td>
+                <td><button class="btn btn-sm btn-info">Editar</button> <button class="btn btn-sm btn-danger">Excluir</button></td>
+            </tr>
+        `;
+    }
+
+    // --- SEÇÃO: CLIENTES ---
+    function loadClientes() {
+        console.log("Carregando Clientes...");
+        // Exemplo: fetch('/api/clientes').then(res => res.json()).then(data => { ... });
+        const tabelaCorpo = document.getElementById('tabela-clientes-corpo');
+        tabelaCorpo.innerHTML = `
+            <tr>
+                <td>1</td>
+                <td>João da Silva</td>
+                <td>123.456.789-00</td>
+                <td>joao.silva</td>
+                <td>Fibra 300Mb</td>
+                <td><span class="badge bg-success">Ativo</span></td>
+                <td><button class="btn btn-sm btn-info">Editar</button> <button class="btn btn-sm btn-warning">Provisionar</button></td>
+            </tr>
+        `;
+    }
+    document.getElementById('btn-atualizar-clientes').addEventListener('click', loadClientes);
     
-    showSection('planos'); // Define a seção inicial
+    // Botão de ver senha
+    const senhaInput = document.getElementById('senha');
+    const btnVerSenha = document.getElementById('btn-ver-senha');
+    btnVerSenha.addEventListener('click', () => {
+        if (senhaInput.type === 'password') {
+            senhaInput.type = 'text';
+            btnVerSenha.innerHTML = '<i class="bi bi-eye-slash"></i>';
+        } else {
+            senhaInput.type = 'password';
+            btnVerSenha.innerHTML = '<i class="bi bi-eye"></i>';
+        }
+    });
+
+    // --- SEÇÃO: PLANOS ---
+    function loadPlanos() {
+        console.log("Carregando Planos...");
+        const tabelaCorpo = document.getElementById('tabela-planos-corpo');
+        tabelaCorpo.innerHTML = `
+            <tr>
+                <td>1</td>
+                <td>Fibra 300Mb</td>
+                <td>300</td>
+                <td>150</td>
+                <td>R$ 99,90</td>
+                <td>plano_300</td>
+                <td><button class="btn btn-sm btn-info">Editar</button> <button class="btn btn-sm btn-danger">Excluir</button></td>
+            </tr>
+        `;
+    }
+    document.getElementById('btn-atualizar-planos').addEventListener('click', loadPlanos);
+
+    // --- SEÇÃO: TICKETS ---
+    function loadTickets() {
+        console.log("Carregando Tickets...");
+        const tabelaCorpo = document.getElementById('tabela-tickets-corpo');
+        tabelaCorpo.innerHTML = `
+            <tr>
+                <td>1024</td>
+                <td>João da Silva</td>
+                <td>Internet Lenta</td>
+                <td>${new Date().toLocaleDateString('pt-BR')}</td>
+                <td><span class="badge bg-warning text-dark">Aberto</span></td>
+                <td><button class="btn btn-sm btn-primary">Ver</button></td>
+            </tr>
+        `;
+    }
+    document.getElementById('btn-atualizar-tickets').addEventListener('click', loadTickets);
+
+    // --- SEÇÃO: USUÁRIOS ---
+    function loadUsuarios() {
+        console.log("Carregando Usuários...");
+        const tabelaCorpo = document.getElementById('tabela-usuarios-corpo');
+        tabelaCorpo.innerHTML = `
+            <tr>
+                <td>1</td>
+                <td>Administrador</td>
+                <td>admin@matrix.com</td>
+                <td><button class="btn btn-sm btn-info">Editar</button> <button class="btn btn-sm btn-danger">Excluir</button></td>
+            </tr>
+        `;
+    }
+
+    // --- INICIALIZAÇÃO ---
+    // Carrega a seção padrão e seus dados ao iniciar a aplicação
+    showSection(defaultSection);
+    window.loadDataForSection(defaultSection);
+
 });

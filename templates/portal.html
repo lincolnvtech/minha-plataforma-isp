@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>Matrix - Portal do Cliente</title>
+    </head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Portal do Cliente</h2>
+            <form id="form-login-cliente">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="login-pppoe" placeholder="seu_login_pppoe" required>
+                    <label for="login-pppoe">Login PPPoE</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="password" class="form-control" id="senha-pppoe" placeholder="Senha" required>
+                    <label for="senha-pppoe">Senha</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+            <div id="mensagem-erro"></div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='portal.js') }}"></script>
+</body>
+</html>
